@@ -1,0 +1,17 @@
+#version 330
+
+layout(location = 0) in vec4 posAttr;
+
+uniform mat4 matrix;
+uniform float factor;
+
+void main()
+{
+    float x = posAttr.x;
+    float y = posAttr.y;
+    float z = posAttr.z;
+
+    vec3 form = vec3(x*sqrt(1- y*y/2-z*z/2+y*y*z*z/3) ,y*sqrt(1- z*z/2-x*x/2+x*x*z*z/3),z*sqrt(1- x*x/2-y*y/2+y*y*x*x/3));
+    vec4 res = (1-factor)*posAttr + factor*vec4(form,1);
+    gl_Position = matrix * res;
+}
