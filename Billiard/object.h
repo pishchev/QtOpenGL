@@ -8,6 +8,7 @@
 #include <QOpenGLVertexArrayObject>
 #include <QOpenGLTexture>
 #include <QOpenGLExtraFunctions>
+#include <QOpenGLFunctions_4_0_Core>
 #include <string>
 
 #include "objectmodel.h"
@@ -29,9 +30,10 @@ public:
                 GLfloat rtSpeed,
                 std::string textFile,
                 std::string normFile,
-                QOpenGLShaderProgram *m_program);
+                std::vector<QOpenGLShaderProgram*>m_program);
 
     virtual void render(QOpenGLShaderProgram *m_program ,QOpenGLFunctions* scene);
+    void render2(QOpenGLShaderProgram *m_program ,QOpenGLFunctions* scene);
 
     std::vector<Vertex> vertexs;
 

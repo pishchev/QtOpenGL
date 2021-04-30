@@ -16,7 +16,7 @@ public:
     void step(float forwBack, float leftRight);
     void fly(float upDown);
 
-private:
+
     QVector3D center;
     QVector3D eyeLaser;
     QVector3D headDir;

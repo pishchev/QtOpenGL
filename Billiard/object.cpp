@@ -9,7 +9,7 @@ void Object::Init(std::vector<Vertex> verts,
                     GLfloat rtSpeed,
                     std::string textFile,
                     std::string normFile,
-                    QOpenGLShaderProgram *m_program)
+                    std::vector<QOpenGLShaderProgram*>m_program)
 {
     vertexs = verts;
     model.setRotate(rtSpeed,1.0f,0.0f,0.0f);
@@ -29,14 +29,15 @@ void Object::Init(std::vector<Vertex> verts,
 
     m_vbo->allocate( vertexs.data(), vertexs.size() * sizeof(Vertex));
 
-    m_program->enableAttributeArray("posAttr");
-    m_program->setAttributeBuffer("posAttr", GL_FLOAT, offsetof(Vertex, vertex), 3, sizeof(Vertex));
-
-    m_program->enableAttributeArray("norAttr");
-    m_program->setAttributeBuffer("norAttr", GL_FLOAT, offsetof(Vertex, normal), 3, sizeof(Vertex));
-
-    m_program->enableAttributeArray("texCoord");
-    m_program->setAttributeBuffer("texCoord", GL_FLOAT, offsetof(Vertex, texCoord), 2, sizeof(Vertex));
+    for (auto it = m_program.begin() ; it!= m_program.end(); ++it)
+    {
+        (*it)->enableAttributeArray("posAttr");
+        (*it)->setAttributeBuffer("posAttr", GL_FLOAT, offsetof(Vertex, vertex), 3, sizeof(Vertex));
+        (*it)->enableAttributeArray("norAttr");
+        (*it)->setAttributeBuffer("norAttr", GL_FLOAT, offsetof(Vertex, normal), 3, sizeof(Vertex));
+        (*it)->enableAttributeArray("texCoord");
+        (*it)->setAttributeBuffer("texCoord", GL_FLOAT, offsetof(Vertex, texCoord), 2, sizeof(Vertex));
+    }
 
     m_vbo->release();
 }
@@ -49,12 +50,25 @@ void Object::render(QOpenGLShaderProgram *m_program ,QOpenGLFunctions* scene)
 
     m_program->setUniformValue(textName.data(),0);
     m_program->setUniformValue(normName.data(),1);
+    m_program->setUniformValue("shadowMap",2);
 
     m_vao->bind();
     scene->glActiveTexture(GL_TEXTURE0);
     texture->bind();
     scene->glActiveTexture(GL_TEXTURE1);
     normalMap->bind();
+    glPolygonMode(GL_FRONT, GL_FILL);
+    glDrawArrays(GL_TRIANGLES, 0, vertexs.size());
+}
+
+void Object::render2(QOpenGLShaderProgram *m_program ,QOpenGLFunctions* scene)
+{
+
+    m_program->setUniformValue("rtmatrix", model.getRotate());
+    m_program->setUniformValue("trmatrix" , model.getTranslate());
+
+    m_vao->bind();
+
     glPolygonMode(GL_FRONT, GL_FILL);
     glDrawArrays(GL_TRIANGLES, 0, vertexs.size());
 }

@@ -20,6 +20,7 @@ void LightObject::render(QOpenGLShaderProgram *m_program ,QOpenGLFunctions* scen
 
     m_program->setUniformValue(textName.data(),0);
     m_program->setUniformValue(normName.data(),1);
+    m_program->setUniformValue("shaiderMap",1);
 
     m_vao->bind();
     scene->glActiveTexture(GL_TEXTURE0);

@@ -1,11 +1,11 @@
 QT       += core gui
+QT       += gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 CONFIG += c++11
 LIBS += -lopengl32
 LIBS += -lglu32
-
 
 # You can make your code fail to compile if it uses deprecated APIs.
 # In order to do so, uncomment the following line.
@@ -30,6 +30,7 @@ HEADERS += \
     mouse.h \
     object.h \
     objectmodel.h \
+    quadMesh.h \
     scene.h \
     sourcelight.h \
     sphere.h \
@@ -44,5 +45,9 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 DISTFILES += \
+    fragmentDebugShadows.glsl \
+    fragmentDepth.glsl \
     fragmentShaider.glsl \
+    vertexDebugShadows.glsl \
+    vertexDepth.glsl \
     vertexShaider.glsl
