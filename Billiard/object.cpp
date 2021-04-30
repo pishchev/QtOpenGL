@@ -50,7 +50,10 @@ void Object::render(QOpenGLShaderProgram *m_program ,QOpenGLFunctions* scene)
 
     m_program->setUniformValue(textName.data(),0);
     m_program->setUniformValue(normName.data(),1);
-    m_program->setUniformValue("shadowMap",2);
+    m_program->setUniformValue("shadowMap[0]",2);
+    m_program->setUniformValue("shadowMap[1]",3);
+    m_program->setUniformValue("shadowMap[2]",4);
+    m_program->setUniformValue("shadowMap[3]",5);
 
     m_vao->bind();
     scene->glActiveTexture(GL_TEXTURE0);

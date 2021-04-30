@@ -78,9 +78,9 @@ GLint m_posAttr = 0;
 GLint m_trMatrix = 0;
 GLint m_matrixUniform = 0;
 
-unsigned int depthMapFBO;
+unsigned int depthMapFBO[4];
 const unsigned int SHADOW_WIDTH = 1920, SHADOW_HEIGHT = 1920;
-unsigned int depthMap;
+GLuint depthMap[4];
 
 int m_minFilterMode  =0 ;
 int m_magFilterMode =0 ;

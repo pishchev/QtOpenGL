@@ -8,62 +8,66 @@ void Scene::initializeGL()
     mouse.mouseX = QCursor::pos().x();
     mouse.mouseY = QCursor::pos().y();
 
-    glGenFramebuffers(1, &depthMapFBO);
-    glGenTextures(1, &depthMap);
-    glBindTexture(GL_TEXTURE_2D, depthMap);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
-                 SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    for (int i = 0 ; i < 4 ; i ++)
+    {
+        glGenFramebuffers(1, &depthMapFBO[i]);
+        glGenTextures(1, &depthMap[i]);
+        glBindTexture(GL_TEXTURE_2D, depthMap[i]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
+                     SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO[i]);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap[i], 0);
 
-    glDrawBuffer(GL_NONE);
-    glReadBuffer(GL_NONE);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glDrawBuffer(GL_NONE);
+        glReadBuffer(GL_NONE);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+
 }
 
 void Scene::paintGL()
 {
     glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-    float near_plane = 0.1f, far_plane = 30.0f;
-    QMatrix4x4 lightProjection;
-    //lightProjection.ortho(-50.0f, 50.0f, -30.0f, 30.0f, near_plane, far_plane);
-    lightProjection.perspective(120,1, near_plane, far_plane);
-
-
-    QMatrix4x4 lightView ;//= camera.getView();
-    lightView.lookAt({lights[3].model.tx,lights[3].model.ty,lights[3].model.tz},
-                     {lights[3].model.tx,lights[3].model.ty-1,lights[3].model.tz},
-                     {-1,0,0});
-
-    QMatrix4x4 lightSpaceMatrix = lightProjection * lightView;
-
-    m_programDepth->bind();
-    m_programDepth->setUniformValue("lightSpaceMatrix" , lightSpaceMatrix);
-
-
-    for (auto obj = balls.begin() ; obj!= balls.end(); ++obj)
+    float near_plane = 0.1f, far_plane = 60.0f;
+    QMatrix4x4 lightSpaceMatrix[4];
+    for (int i = 0 ; i < 4 ; i ++)
     {
-        obj->render(m_programDepth , this);
+        glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO[i]);
+        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+
+        QMatrix4x4 lightProjection;
+        //lightProjection.ortho(-50.0f, 50.0f, -30.0f, 30.0f, near_plane, far_plane);
+        lightProjection.perspective(120,1, near_plane, far_plane);
+
+
+        QMatrix4x4 lightView ;//= camera.getView();
+        lightView.lookAt({lights[i].model.tx,lights[i].model.ty,lights[i].model.tz},
+                         {lights[i].model.tx,lights[i].model.ty-1,lights[i].model.tz},
+                         {-1,0,0});
+
+        lightSpaceMatrix[i] = lightProjection * lightView;
+
+        m_programDepth->bind();
+        m_programDepth->setUniformValue("lightSpaceMatrix" , lightSpaceMatrix[i]);
+
+
+        for (auto obj = balls.begin() ; obj!= balls.end(); ++obj)
+        {
+            obj->render(m_programDepth , this);
+        }
+
+        for (auto obj = table.begin() ; obj!= table.end(); ++obj)
+        {
+            obj->render(m_programDepth , this);
+        }
+
+        m_programDepth->release();
     }
-
-    for (auto obj = table.begin() ; obj!= table.end(); ++obj)
-    {
-        obj->render(m_programDepth , this);
-    }
-
-//    for (auto obj = lights.begin() ; obj!= lights.end(); ++obj)
-//    {
-//        obj->render(m_programDepth , this);
-//    }
-
-    m_programDepth->release();
 
     //--------------------------------------------------------------------------------
 
@@ -87,7 +91,7 @@ void Scene::paintGL()
         m_programDebugShadows->setUniformValue("far_plane" , far_plane);
 
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D , depthMap);
+        glBindTexture(GL_TEXTURE_2D , depthMap[3]);
 
         quad.render2(m_programDebugShadows,this);
 
@@ -108,10 +112,13 @@ void Scene::paintGL()
         lightUniforms();
         m_program->setUniformValue("viewmatrix" , camera.getPerspective()*camera.getView());
         m_program->setUniformValue("camPos" , QVector4D(camera.getPos(),1));
-        m_program->setUniformValue("lightSpaceMatrix" , lightSpaceMatrix);
+        m_program->setUniformValueArray("lightSpaceMatrix" , lightSpaceMatrix,4);
 
-        glActiveTexture(GL_TEXTURE2);
-        glBindTexture(GL_TEXTURE_2D , depthMap);
+        for (int i = 0 ; i < 4; i ++)
+        {
+            glActiveTexture(GL_TEXTURE2+i);
+            glBindTexture(GL_TEXTURE_2D, depthMap[i]);
+        }
 
         for (auto obj = balls.begin() ; obj!= balls.end(); ++obj)
         {
@@ -329,7 +336,7 @@ void Scene::initObject()
                    folder+img_,
                    "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\1.jpg",
                    shaiders);
-            o.model.setTranslate(-4+2*k , 6.5f , 1.5f*i-27);
+            o.model.setTranslate(-4+2*k , 6.5f , 8.0f*i-27);
             o.model.rotate(true);
             balls.push_back(o);
 
