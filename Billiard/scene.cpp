@@ -32,6 +32,9 @@ void Scene::initializeGL()
 
 void Scene::paintGL()
 {
+    ballsPool.move();
+
+
     glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
     float near_plane = 0.1f, far_plane = 60.0f;
     QMatrix4x4 lightSpaceMatrix[4];
@@ -41,7 +44,6 @@ void Scene::paintGL()
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
 
         QMatrix4x4 lightProjection;
-        //lightProjection.ortho(-50.0f, 50.0f, -30.0f, 30.0f, near_plane, far_plane);
         lightProjection.perspective(120,1, near_plane, far_plane);
 
 
@@ -55,11 +57,7 @@ void Scene::paintGL()
         m_programDepth->bind();
         m_programDepth->setUniformValue("lightSpaceMatrix" , lightSpaceMatrix[i]);
 
-
-        for (auto obj = balls.begin() ; obj!= balls.end(); ++obj)
-        {
-            obj->render(m_programDepth , this);
-        }
+        ballsPool.render(m_programDepth , this);
 
         for (auto obj = table.begin() ; obj!= table.end(); ++obj)
         {
@@ -120,10 +118,7 @@ void Scene::paintGL()
             glBindTexture(GL_TEXTURE_2D, depthMap[i]);
         }
 
-        for (auto obj = balls.begin() ; obj!= balls.end(); ++obj)
-        {
-            obj->render(m_program , this);
-        }
+        ballsPool.render(m_program , this);
 
         for (auto obj = table.begin() ; obj!= table.end(); ++obj)
         {
@@ -137,6 +132,8 @@ void Scene::paintGL()
         m_program->release();
 
     }
+
+
     ++m_frame;
 
 }
@@ -179,7 +176,7 @@ void Scene::mouseEvent()
 
 void Scene::keyEvent()
 {
-    GLfloat camera_speed = 0.2;
+    GLfloat camera_speed = 0.5;
     if (keys.keys[Qt::Key_A])
     {
         camera.step(0,-camera_speed);
@@ -317,32 +314,37 @@ void Scene::initObject()
     shaiders.push_back(m_program);
     shaiders.push_back(m_programDepth);
 
-    Sphere s(0.75,50,50);
-    for (int i = 0 ; i< 4 ; i++)
+    //BALLS
     {
-        for (int k = 0 ; k< 4 ; k++)
+        Sphere s(0.75,50,50);
+        for (int i = 0 ; i< 4 ; i++)
         {
-            Object o;
+            for (int k = 0 ; k< 4 ; k++)
+            {
+                Object o;
 
-            std::string folder = "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\";
+                std::string folder = "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\";
 
-            int num  = i*4+k;
-            if (num == 0)continue;
+                int num  = i*4+k;
+                if (num == 0)continue;
 
-            std::string img_ =std::to_string(num)+".jpg";
+                std::string img_ =std::to_string(num)+".jpg";
 
-            o.Init(s.getVertexs(),
-                   screen()->refreshRate()/100,
-                   folder+img_,
-                   "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\1.jpg",
-                   shaiders);
-            o.model.setTranslate(-4+2*k , 6.5f , 8.0f*i-27);
-            o.model.rotate(true);
-            balls.push_back(o);
+                o.Init(s.getVertexs(),
+                       screen()->refreshRate()/100,
+                       folder+img_,
+                       "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\1.jpg",
+                       shaiders);
+                o.model.setTranslate(-4+2*k , 6.5f , 8.0f*i-27);
+                o.model.rotate(true);
+                //balls.push_back(Ball(o,num));
+                ballsPool.addBall(num , Ball(o,num, 0.75f));
 
+            }
         }
     }
 
+    // TABLE
     {
         Object o;
         o.Init(Surface::surface(14.2f,27.6f,15,15),
@@ -352,9 +354,7 @@ void Scene::initObject()
                shaiders);
         o.model.setTranslate(0 , 5.75f , 0);
         table.push_back(o);
-    }
-    {
-        Object o;
+
         o.Init(MeshLoader::loadMesh("D:\\source\\repos\\Qt\\Billiards\\Billiards\\meshes\\MeshTableOnly2.obj"),
                screen()->refreshRate()/100,
                "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\Wood.png",
@@ -363,8 +363,11 @@ void Scene::initObject()
         o.model.setTranslate(0 , -6 , 0);
         table.push_back(o);
     }
+
+    //LIGHTS
     {
-        for (int i = 0 ; i < 4; ++i)
+        for (int i = -1 ; i <= 1; i += 2)
+        for (int k = -1 ; k <= 1; k+=2)
         {
             LightObject o;
             Sphere s2(0.6,50,50);
@@ -373,12 +376,14 @@ void Scene::initObject()
                    "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\Wood.png",
                    "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\1.jpg",
                    shaiders);
-            o.model.setTranslate(0,35 , -19 + i*12.5f);
+            o.model.setTranslate(7*i ,35 , k*13);
+
             lights.push_back(o);
         }
 
     }
 
+    //TESTSURFACE
     {
         quad.Init(QuadMesh::getVertexs(),
                screen()->refreshRate()/100,
@@ -421,8 +426,8 @@ void Scene::setLightCoefs(std::vector<int> vec)
     coefs.ka = static_cast<float>(vec[0])/100;
     coefs.kd = vec[1];
     coefs.k = vec[2];
-    coefs.p = vec[3];
-    coefs.n = vec[4];
+    coefs.p = static_cast<float>(vec[3])/10;
+    coefs.n = static_cast<float>(vec[4])/10;
     coefs.ks = vec[5];
 }
 

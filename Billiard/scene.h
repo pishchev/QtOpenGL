@@ -25,6 +25,7 @@
 #include "keyboard.h"
 #include "mouse.h"
 #include "quadMesh.h"
+#include "ball.h"
 
 class Scene : public QOpenGLWidget, protected QOpenGLFunctions
 {
@@ -57,11 +58,11 @@ Scene(QWidget* parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags()):QOpenGLW
 
 private:
 
-std::vector<Object> balls;
+BallsPool ballsPool;
 
 std::vector<Object> table;
-
 std::vector<LightObject> lights;
+
 
 Object quad;
 

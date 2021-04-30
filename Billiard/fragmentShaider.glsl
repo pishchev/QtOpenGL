@@ -11,8 +11,8 @@ uniform float ka;
 uniform float kd;
 uniform float ks;
 uniform float k;
-uniform int n;
-uniform int p;
+uniform float n;
+uniform float p;
 
 uniform vec4 camPos;
 
@@ -26,6 +26,9 @@ in vec4 fragPos;
 in vec2 texCoords;
 in vec4 fragPosLightSpace[4];
 
+float far_plane = 60.0f;
+float near_plane = 0.1f;
+
 vec3 calcNormalFromNormalmap(vec3 localNormal,vec2 uv)
 {
     vec3 n = normalize(localNormal.xyz);
@@ -38,9 +41,6 @@ vec3 calcNormalFromNormalmap(vec3 localNormal,vec2 uv)
     vec3 resultingNormal = normalize(normal.x*t+normal.y*b+normal.z*n);
     return resultingNormal;
 }
-
-float far_plane = 60.0f;
-float near_plane = 0.1f;
 
 float LinearizeDepth(float depth)
 {
@@ -73,11 +73,10 @@ float ShadowCalculation(vec4 normal,vec4 lightDir , int i  )
             shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;
         }
     }
-    shadow /= 9.0;
+    shadow /= 2.0;
 
     return shadow;
 }
-
 
 void main()
 {
@@ -97,27 +96,24 @@ void main()
         float shadow = ShadowCalculation(normals,normalize(pointPos[i] -fragPos) , i);
         //shadow = 0;
 
+        float distansFactor = 1/(pow(distance(fragPos , pointPos[i]),p) + k);
+
+        float distansShadow = 300000/pow(distance(fragPos , pointPos[i]),4);
+
         //specular point
-        col += ks* 1/(pow(distance(fragPos , pointPos[i]),p) + k)*
+        col += ks*distansFactor *
                 pow(max(dot( normalize(2*actualNormal - lightDir),normalize(camPos - fragPos)),0),n)*
                 pointColor[i]*
                 max(dot(actualNormal, lightDir),0)*
-                (1 - shadow);
+                (1 - min(shadow*distansShadow,1));
 
         //diffuse point
-        col += kd* 1/(pow(distance(fragPos , pointPos[i]),p) + k)*
+        col += kd* distansFactor*
                 max(dot(lightDir,actualNormal),0)*
                 pointColor[i]*
-                (1 - shadow);
+                (1 - min(shadow*distansShadow,1));
     }
 
     fragColor = texture(textureMap, texCoords) * col;
-
-//    if (texture(shadowMap0,texCoords) == texture(shadowMap1,texCoords))
-//    {
-//         fragColor = vec4(1,0,0,1);
-//    }
-
-
 
 }

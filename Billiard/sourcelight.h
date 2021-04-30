@@ -25,9 +25,9 @@ public:
     float ka = 0.5;
     float kd = 40;
     float ks = 70;
-    int n = 4;
+    float n = 4.0f;
     float k = 0.8f;
-    int p = 2;
+    float p = 2.0f;
 };
 
 #endif // SOURCELIGHT_H
