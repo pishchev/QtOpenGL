@@ -13,6 +13,8 @@ public:
 
     void move();
 
+    static void collision(Ball& b1 , Ball& b2);
+
     float dx = 2;
     float dz = 2;
 

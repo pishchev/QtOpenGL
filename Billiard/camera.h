@@ -55,9 +55,20 @@ inline void Camera::rotate(float upDown, float leftRight)
 {
     QQuaternion rotateLeftRight = QQuaternion::fromAxisAndAngle(QVector3D(0,1,0), leftRight);
     QQuaternion rotateUpDown = QQuaternion::fromAxisAndAngle(rightDir, upDown);
-    eyeLaser = rotateLeftRight * rotateUpDown * eyeLaser;
-    headDir = rotateLeftRight * rotateUpDown * headDir;
-    rightDir = rotateLeftRight * rotateUpDown * rightDir;
+    QVector3D tmp = rotateLeftRight * rotateUpDown * headDir;
+    if (tmp.y() > 0)
+    {
+        eyeLaser = rotateLeftRight * rotateUpDown * eyeLaser;
+        headDir = rotateLeftRight * rotateUpDown * headDir;
+        rightDir = rotateLeftRight * rotateUpDown * rightDir;
+    }
+    else
+    {
+        eyeLaser = rotateLeftRight  * eyeLaser;
+        headDir = rotateLeftRight * headDir;
+        rightDir = rotateLeftRight * rightDir;
+    }
+
 }
 
 inline void Camera::step(float forwBack, float leftRight)

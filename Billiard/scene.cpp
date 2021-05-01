@@ -232,32 +232,92 @@ void Scene::initObject()
 
     //BALLS
     {
-        Sphere s(0.75,50,50);
-        for (int i = 0 ; i< 4 ; i++)
+        Sphere s(0.8,50,50);
+        if (false)
         {
-            for (int k = 0 ; k< 4 ; k++)
+
+            for (int i = 0 ; i< 4 ; i++)
             {
-                Object o;
+                for (int k = 0 ; k< 4 ; k++)
+                {
+                    Object o;
 
-                std::string folder = "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\";
+                    std::string folder = "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\";
 
-                int num  = i*4+k;
-                if (num == 0)continue;
+                    int num  = i*4+k;
+                    if (num == 0)continue;
 
-                std::string img_ =std::to_string(num)+".jpg";
+                    std::string img_ =std::to_string(num)+".jpg";
 
-                o.Init(s.getVertexs(),
-                       screen()->refreshRate()/100,
-                       folder+img_,
-                       "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_metal.jpg",
-                       shaiders);
-                o.model.setTranslate(-4+2*k , 6.5f , 8.0f*i-27);
-                o.model.rotate(true);
-                //balls.push_back(Ball(o,num));
-                ballsPool.addBall(num , Ball(o,num, 0.75f));
+                    o.Init(s.getVertexs(),
+                           screen()->refreshRate()/100,
+                           folder+img_,
+                           "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_metal.jpg",
+                           shaiders);
+                    o.model.setTranslate(-4+2*k , 6.5f , 8.0f*i-27);
+                    o.model.rotate(true);
+                    //balls.push_back(Ball(o,num));
+                    ballsPool.addBall(num , Ball(o,num, 0.75f));
 
+                }
             }
         }
+        else
+        {
+            int num = 0;
+            Object o;
+            Ball b = Ball(o,num, 0.75f);
+
+            o.Init(s.getVertexs(),
+                   screen()->refreshRate()/100,
+                   "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\1.jpg",
+                   "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_metal.jpg",
+                   shaiders);
+            o.model.setTranslate(2*2 , 6.5f , 8.0f*2-27);
+            num++;
+            b = Ball(o,num, 0.75f);
+            b.dx = 0;
+            b.dz = 0;
+            ballsPool.addBall(num , b);
+
+
+            o.Init(s.getVertexs(),
+                   screen()->refreshRate()/100,
+                   "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\2.jpg",
+                   "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_metal.jpg",
+                   shaiders);
+            o.model.setTranslate(2*2 , 6.5f , 8.8f*2-27);
+            num++;
+            b = Ball(o,num, 0.75f);
+            b.dx = 0;
+            b.dz = 0;
+            ballsPool.addBall(num , b);
+
+            o.Init(s.getVertexs(),
+                   screen()->refreshRate()/100,
+                   "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\2.jpg",
+                   "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_metal.jpg",
+                   shaiders);
+            o.model.setTranslate(2*2 , 6.5f , 12.0f*2-27);
+            num++;
+            b = Ball(o,num, 0.75f);
+            b.dx = 0;
+            b.dz = -0.3f;
+            ballsPool.addBall(num , b);
+
+            o.Init(s.getVertexs(),
+                   screen()->refreshRate()/100,
+                   "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\2.jpg",
+                   "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_metal.jpg",
+                   shaiders);
+            o.model.setTranslate(2*2 , 6.5f , 7.4f*2-27);
+            num++;
+            b = Ball(o,num, 0.75f);
+            b.dx = 0;
+            b.dz = 0;
+            ballsPool.addBall(num , b);
+        }
+
     }
 
     //TABLE
