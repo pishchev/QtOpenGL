@@ -44,7 +44,6 @@ void Object::Init(std::vector<Vertex> verts,
 
 void Object::render(QOpenGLShaderProgram *m_program ,QOpenGLFunctions* scene)
 {
-
     m_program->setUniformValue("rtmatrix", model.getRotate());
     m_program->setUniformValue("trmatrix" , model.getTranslate());
 
@@ -64,14 +63,4 @@ void Object::render(QOpenGLShaderProgram *m_program ,QOpenGLFunctions* scene)
     glDrawArrays(GL_TRIANGLES, 0, vertexs.size());
 }
 
-void Object::render2(QOpenGLShaderProgram *m_program ,QOpenGLFunctions* scene)
-{
 
-    m_program->setUniformValue("rtmatrix", model.getRotate());
-    m_program->setUniformValue("trmatrix" , model.getTranslate());
-
-    m_vao->bind();
-
-    glPolygonMode(GL_FRONT, GL_FILL);
-    glDrawArrays(GL_TRIANGLES, 0, vertexs.size());
-}

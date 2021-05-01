@@ -35,7 +35,7 @@ inline Camera::Camera()
 inline QMatrix4x4 Camera::getPerspective()
 {
     QMatrix4x4 perspective;
-    perspective.perspective(60.0f, 4.0f/3.0f, 0.1f, 100.0f);
+    perspective.perspective(60.0f, 4.0f/3.0f, 0.1f, 130.0f);
     return perspective;
 }
 

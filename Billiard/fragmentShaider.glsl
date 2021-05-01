@@ -80,8 +80,8 @@ float ShadowCalculation(vec4 normal,vec4 lightDir , int i  )
 
 void main()
 {
-    //vec4 actualNormal  = vec4(calcNormalFromNormalmap(normals.xyz, texCoords),1);
-    vec4 actualNormal = normals;
+    vec4 actualNormal  = vec4(calcNormalFromNormalmap(normals.xyz, texCoords),1);
+    //vec4 actualNormal = normals;
 
     //ambient
     vec4 col =ka* ambientColor;

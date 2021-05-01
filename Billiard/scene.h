@@ -52,6 +52,10 @@ void keyEvent();
 void mouseMoveEvent(QMouseEvent *event) override;
 void mouseEvent();
 
+void initShadowBuffers();
+
+void createShadowMap();
+
 Scene(QWidget* parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags()):QOpenGLWidget(parent,f), timer(new QTimer(this)){}
 
 ~Scene(){}
@@ -61,10 +65,9 @@ private:
 BallsPool ballsPool;
 
 std::vector<Object> table;
+std::vector<Object> lamps;
+std::vector<Object> walls;
 std::vector<LightObject> lights;
-
-
-Object quad;
 
 Camera camera;
 
@@ -87,6 +90,8 @@ int m_minFilterMode  =0 ;
 int m_magFilterMode =0 ;
 int m_useAniso =0 ;
 int m_wrapMode =0 ;
+
+QMatrix4x4 lightSpaceMatrix[4];
 
 QOpenGLFunctions *f = nullptr;
 QOpenGLShaderProgram *m_program = nullptr;
