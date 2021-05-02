@@ -44,13 +44,15 @@ void Object::Init(std::vector<Vertex> verts,
 
 void Object::render(QOpenGLShaderProgram *m_program ,QOpenGLFunctions* scene)
 {
-
     m_program->setUniformValue("rtmatrix", model.getRotate());
     m_program->setUniformValue("trmatrix" , model.getTranslate());
 
     m_program->setUniformValue(textName.data(),0);
     m_program->setUniformValue(normName.data(),1);
-    m_program->setUniformValue("shadowMap",2);
+    m_program->setUniformValue("shadowMap[0]",2);
+    m_program->setUniformValue("shadowMap[1]",3);
+    m_program->setUniformValue("shadowMap[2]",4);
+    m_program->setUniformValue("shadowMap[3]",5);
 
     m_vao->bind();
     scene->glActiveTexture(GL_TEXTURE0);
@@ -61,14 +63,4 @@ void Object::render(QOpenGLShaderProgram *m_program ,QOpenGLFunctions* scene)
     glDrawArrays(GL_TRIANGLES, 0, vertexs.size());
 }
 
-void Object::render2(QOpenGLShaderProgram *m_program ,QOpenGLFunctions* scene)
-{
 
-    m_program->setUniformValue("rtmatrix", model.getRotate());
-    m_program->setUniformValue("trmatrix" , model.getTranslate());
-
-    m_vao->bind();
-
-    glPolygonMode(GL_FRONT, GL_FILL);
-    glDrawArrays(GL_TRIANGLES, 0, vertexs.size());
-}

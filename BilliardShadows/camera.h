@@ -16,7 +16,7 @@ public:
     void step(float forwBack, float leftRight);
     void fly(float upDown);
 
-private:
+
     QVector3D center;
     QVector3D eyeLaser;
     QVector3D headDir;
@@ -35,7 +35,7 @@ inline Camera::Camera()
 inline QMatrix4x4 Camera::getPerspective()
 {
     QMatrix4x4 perspective;
-    perspective.perspective(60.0f, 4.0f/3.0f, 0.1f, 100.0f);
+    perspective.perspective(60.0f, 4.0f/3.0f, 0.1f, 130.0f);
     return perspective;
 }
 
@@ -55,9 +55,20 @@ inline void Camera::rotate(float upDown, float leftRight)
 {
     QQuaternion rotateLeftRight = QQuaternion::fromAxisAndAngle(QVector3D(0,1,0), leftRight);
     QQuaternion rotateUpDown = QQuaternion::fromAxisAndAngle(rightDir, upDown);
-    eyeLaser = rotateLeftRight * rotateUpDown * eyeLaser;
-    headDir = rotateLeftRight * rotateUpDown * headDir;
-    rightDir = rotateLeftRight * rotateUpDown * rightDir;
+    QVector3D tmp = rotateLeftRight * rotateUpDown * headDir;
+    if (tmp.y() > 0)
+    {
+        eyeLaser = rotateLeftRight * rotateUpDown * eyeLaser;
+        headDir = rotateLeftRight * rotateUpDown * headDir;
+        rightDir = rotateLeftRight * rotateUpDown * rightDir;
+    }
+    else
+    {
+        eyeLaser = rotateLeftRight  * eyeLaser;
+        headDir = rotateLeftRight * headDir;
+        rightDir = rotateLeftRight * rightDir;
+    }
+
 }
 
 inline void Camera::step(float forwBack, float leftRight)

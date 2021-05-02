@@ -5,128 +5,109 @@ void Scene::initializeGL()
 {
     initProgram();
     initObject();
+    initShadowBuffers();
     mouse.mouseX = QCursor::pos().x();
     mouse.mouseY = QCursor::pos().y();
 
-    glGenFramebuffers(1, &depthMapFBO);
-    glGenTextures(1, &depthMap);
-    glBindTexture(GL_TEXTURE_2D, depthMap);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
-                 SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap, 0);
-    glDrawBuffer(GL_NONE);
-    glReadBuffer(GL_NONE);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void Scene::paintGL()
 {
-    glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-    glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
-    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+    ballsPool.move();
 
-    float near_plane = 0.1f, far_plane = 30.0f;
-    QMatrix4x4 lightProjection;
-    lightProjection.ortho(-30.0f, 30.0f, -30.0f, 30.0f, near_plane, far_plane);
-
-
-    QMatrix4x4 lightView ;//= camera.getView();
-    lightView.lookAt(QVector3D(0,lights[3].model.ty-1,0),
-                     QVector3D( 0.0f, 1.0f,  0.0f),
-                     QVector3D( -1.0f, 0.0f,  0.0f));
-
-    QMatrix4x4 lightSpaceMatrix = lightProjection * lightView;
-
-    m_programDepth->bind();
-    m_programDepth->setUniformValue("lightSpaceMatrix" , lightSpaceMatrix);
-
-
-    for (auto obj = balls.begin() ; obj!= balls.end(); ++obj)
-    {
-        obj->render(m_programDepth , this);
-    }
-
-    for (auto obj = table.begin() ; obj!= table.end(); ++obj)
-    {
-        obj->render(m_programDepth , this);
-    }
-
-    for (auto obj = lights.begin() ; obj!= lights.end(); ++obj)
-    {
-        obj->render(m_programDepth , this);
-    }
-
-    m_programDepth->release();
-
-    //--------------------------------------------------------------------------------
+    createShadowMap();
 
     keyEvent();
     mouseEvent();
 
-    //---------------------------------------------------------------------------------
-
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    if (test)
+    connect(timer, SIGNAL(timeout()), this, SLOT(update()));
+    timer->start(10);
+    const qreal retinaScale = devicePixelRatio();
+    glViewport(0, 0, width() * retinaScale, height() * retinaScale);
+    glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+
+    m_program->bind();
+
+    m_program->setUniformValue("viewmatrix" , camera.getPerspective()*camera.getView());
+    m_program->setUniformValue("camPos" , QVector4D(camera.getPos(),1));
+    m_program->setUniformValueArray("lightSpaceMatrix" , lightSpaceMatrix,4);
+
+    lightUniforms();
+
+    for (int i = 0 ; i < 4; i ++)
     {
-
-        glViewport(0, 0, 1920, 1080);
-        glClearColor(0.0f,0.0f,0.0f,1.0f);
-        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-
-        m_programDebugShadows->bind();
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D , depthMap);
-
-        quad.render2(m_programDebugShadows,this);
-
-        m_programDebugShadows->release();
+        glActiveTexture(GL_TEXTURE2+i);
+        glBindTexture(GL_TEXTURE_2D, depthMap[i]);
     }
 
-    //---------------------------------------------------------------------------------
+    Object::render(ballsPool.balls,m_program , this);
+    Object::render(table,m_program , this);
+    Object::render(lamps,m_program , this);
+    Object::render(walls,m_program , this);
+    Object::render(lights,m_program , this);
+    m_program->release();
 
-    else
-    {
-        connect(timer, SIGNAL(timeout()), this, SLOT(update()));
-        timer->start(10);
-        const qreal retinaScale = devicePixelRatio();
-        glViewport(0, 0, width() * retinaScale, height() * retinaScale);
-        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
-
-        m_program->bind();
-        lightUniforms();
-        m_program->setUniformValue("viewmatrix" , camera.getPerspective()*camera.getView());
-        m_program->setUniformValue("camPos" , QVector4D(camera.getPos(),1));
-        m_program->setUniformValue("lightSpaceMatrix" , lightSpaceMatrix);
-
-        glActiveTexture(GL_TEXTURE2);
-        glBindTexture(GL_TEXTURE_2D , depthMap);
-
-        for (auto obj = balls.begin() ; obj!= balls.end(); ++obj)
-        {
-            obj->render(m_program , this);
-        }
-
-        for (auto obj = table.begin() ; obj!= table.end(); ++obj)
-        {
-            obj->render(m_program , this);
-        }
-
-        for (auto obj = lights.begin() ; obj!= lights.end(); ++obj)
-        {
-            obj->render(m_program , this);
-        }
-        m_program->release();
-
-    }
     ++m_frame;
+
+}
+
+void Scene::initShadowBuffers()
+{
+    for (int i = 0 ; i < 4 ; i ++)
+    {
+        glGenFramebuffers(1, &depthMapFBO[i]);
+        glGenTextures(1, &depthMap[i]);
+        glBindTexture(GL_TEXTURE_2D, depthMap[i]);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
+                     SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO[i]);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthMap[i], 0);
+
+        glDrawBuffer(GL_NONE);
+        glReadBuffer(GL_NONE);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+
+    float near_plane = 0.1f, far_plane = 60.0f;
+    for (int i = 0 ; i < 4 ; i ++)
+    {
+        QMatrix4x4 lightProjection;
+        lightProjection.perspective(120,1, near_plane, far_plane);
+
+
+        QMatrix4x4 lightView ;
+        lightView.lookAt({lights[i].model.tx,lights[i].model.ty,lights[i].model.tz},
+                         {lights[i].model.tx,lights[i].model.ty-1,lights[i].model.tz},
+                         {-1,0,0});
+
+        lightSpaceMatrix[i] = lightProjection * lightView;
+    }
+}
+
+void Scene::createShadowMap()
+{
+    glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+
+    for (int i = 0 ; i < 4 ; i ++)
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO[i]);
+        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+
+        m_programDepth->bind();
+        m_programDepth->setUniformValue("lightSpaceMatrix" , lightSpaceMatrix[i]);
+
+        Object::render(ballsPool.balls,m_programDepth, this);
+        Object::render(table,m_programDepth , this);
+
+        m_programDepth->release();
+    }
 
 }
 
@@ -151,24 +132,18 @@ void Scene::mouseMoveEvent(QMouseEvent *event)
     int dx = QCursor::pos().x() - mouse.mouseX;
     int dy = QCursor::pos().y() - mouse.mouseY;
 
-    mouse.mouseX = QCursor::pos().x();
-    mouse.mouseY = QCursor::pos().y();
-
-    if (mouse.pressed)
-    {
-        camera.rotate(-1*(float)dy/5,-1*(float)dx/5);
-    }
-    mouse.pressed = true;
+    camera.rotate(-1*(float)dy/5,-1*(float)dx/5);
 }
 
 void Scene::mouseEvent()
 {
-    mouse.pressed = false;
+    mouse.mouseX = QCursor::pos().x();
+    mouse.mouseY = QCursor::pos().y();
 }
 
 void Scene::keyEvent()
 {
-    GLfloat camera_speed = 0.2;
+    GLfloat camera_speed = 0.5;
     if (keys.keys[Qt::Key_A])
     {
         camera.step(0,-camera_speed);
@@ -192,57 +167,6 @@ void Scene::keyEvent()
     if (keys.keys[Qt::Key_Control])
     {
         camera.fly(-camera_speed);
-    }
-
-    if (keys.keys[Qt::Key_Up])
-    {
-        for (auto obj = lights.begin() ; obj!= lights.end(); ++obj)
-        {
-            obj->model.tz -= 0.5;
-        }
-    }
-    if (keys.keys[Qt::Key_Down])
-    {
-        for (auto obj = lights.begin() ; obj!= lights.end(); ++obj)
-        {
-            obj->model.tz += 0.5;
-        }
-    }
-    if (keys.keys[Qt::Key_Left])
-    {
-        for (auto obj = lights.begin() ; obj!= lights.end(); ++obj)
-        {
-            obj->model.tx -= 0.5;
-        }
-    }
-    if (keys.keys[Qt::Key_Right])
-    {
-        for (auto obj = lights.begin() ; obj!= lights.end(); ++obj)
-        {
-            obj->model.tx += 0.5;
-        }
-    }
-    if (keys.keys[Qt::Key_0])
-    {
-        for (auto obj = lights.begin() ; obj!= lights.end(); ++obj)
-        {
-            obj->model.ty -= 0.5;
-        }
-    }
-    if (keys.keys[Qt::Key_1])
-    {
-        for (auto obj = lights.begin() ; obj!= lights.end(); ++obj)
-        {
-            obj->model.ty += 0.5;
-        }
-    }
-    if (keys.keys[Qt::Key_T])
-    {
-        test = true;
-    }
-    if (keys.keys[Qt::Key_R])
-    {
-        test = false;
     }
 }
 
@@ -306,78 +230,262 @@ void Scene::initObject()
     shaiders.push_back(m_program);
     shaiders.push_back(m_programDepth);
 
-    Sphere s(0.60,50,50);
-    for (int i = 0 ; i< 4 ; i++)
+    //BALLS
     {
-        for (int k = 0 ; k< 4 ; k++)
+        Sphere s(0.8,50,50);
+        if (true)
         {
+
+            for (int i = 0 ; i< 4 ; i++)
+            {
+                for (int k = 0 ; k< 4 ; k++)
+                {
+                    Object o;
+
+                    std::string folder = "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\";
+
+                    int num  = i*4+k;
+                    if (num == 0)continue;
+
+                    std::string img_ =std::to_string(num)+".jpg";
+
+                    o.Init(s.getVertexs(),
+                           screen()->refreshRate()/100,
+                           folder+img_,
+                           "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_metal.jpg",
+                           shaiders);
+                    o.model.setTranslate(-4+2*k , 6.8f , 8.0f*i-26);
+                    o.model.rotate(true);
+                    //balls.push_back(Ball(o,num));
+                    ballsPool.addBall(num , Ball(o,num, 0.8f));
+
+                }
+            }
+        }
+        else
+        {
+            int num = 0;
             Object o;
-
-            std::string folder = "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\";
-
-            int num  = i*4+k;
-            if (num == 0)continue;
-
-            std::string img_ =std::to_string(num)+".jpg";
+            Ball b = Ball(o,num, 0.75f);
 
             o.Init(s.getVertexs(),
                    screen()->refreshRate()/100,
-                   folder+img_,
                    "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\1.jpg",
+                   "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_metal.jpg",
                    shaiders);
-            o.model.setTranslate(-4+2*k , 6.5f , 2*i-4);
-            o.model.rotate(true);
-            balls.push_back(o);
+            o.model.setTranslate(2*2 , 6.5f , 8.0f*2-27);
+            num++;
+            b = Ball(o,num, 0.75f);
+            b.dx = 0;
+            b.dz = 0;
+            ballsPool.addBall(num , b);
+
+            o.Init(s.getVertexs(),
+                   screen()->refreshRate()/100,
+                   "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\1.jpg",
+                   "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_metal.jpg",
+                   shaiders);
+            o.model.setTranslate(2*2 , 6.5f , 13.0f*2-27);
+            num++;
+            b = Ball(o,num, 0.75f);
+            b.dx = 0;
+            b.dz = 0;
+            ballsPool.addBall(num , b);
+
+            o.Init(s.getVertexs(),
+                   screen()->refreshRate()/100,
+                   "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\2.jpg",
+                   "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_metal.jpg",
+                   shaiders);
+            o.model.setTranslate(2*2 , 6.5f , 12.0f*2-27);
+            num++;
+            b = Ball(o,num, 0.75f);
+            b.dx = 0;
+            b.dz = -0.3f;
+            ballsPool.addBall(num , b);
+
 
         }
-    }
 
+    }
+    //TABLE
     {
         Object o;
         o.Init(Surface::surface(14.2f,27.6f,15,15),
                screen()->refreshRate()/100,
                "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\f.jpg",
-               "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\1.jpg",
+               "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_metal.jpg",
                shaiders);
         o.model.setTranslate(0 , 5.75f , 0);
+        o.model.setRotate(0,0,0,1.0f);
         table.push_back(o);
-    }
-    {
-        Object o;
+
         o.Init(MeshLoader::loadMesh("D:\\source\\repos\\Qt\\Billiards\\Billiards\\meshes\\MeshTableOnly2.obj"),
                screen()->refreshRate()/100,
-               "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\Wood.png",
-               "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\1.jpg",
+               "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\w.jpg",
+               "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_wood2.jpg",
                shaiders);
         o.model.setTranslate(0 , -6 , 0);
+        o.model.setRotate(0,0,0,1.0f);
         table.push_back(o);
+
     }
+
+    //LAMPS
     {
-        for (int i = 0 ; i < 4; ++i)
+        Object o;
+        for (int i = -1 ; i <= 1; i += 2)
+        for (int k = -1 ; k <= 1; k+=2)
+        {
+            o.Init(MeshLoader::loadMesh("D:\\source\\repos\\Qt\\Billiards\\Billiards\\meshes\\lamp.obj"),
+                   screen()->refreshRate()/100,
+                   "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\b_w.jpg",
+                   "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_metal.jpg",
+                   shaiders);
+            o.model.setTranslate(7*i , 36  , 13*k);
+            lamps.push_back(o);
+        }
+
+    }
+
+    //LIGHTS
+    {
+        for (int i = -1 ; i <= 1; i += 2)
+        for (int k = -1 ; k <= 1; k+=2)
         {
             LightObject o;
-            Sphere s2(0.6,50,50);
+            Sphere s2(0.75,50,50);
             o.Init(s2.getVertexs(),
                    screen()->refreshRate()/100,
-                   "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\Wood.png",
-                   "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\1.jpg",
+                   "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\white.jpg",
+                   "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_metal.jpg",
                    shaiders);
-            o.model.setTranslate(0,24 , -19 + i*12.5f);
+            o.model.setTranslate(7*i ,35 , k*13);
+            o.model.setRotate(0,0,0,1.0f);
             lights.push_back(o);
         }
 
     }
 
+    //WALLS
     {
-        quad.Init(QuadMesh::getVertexs(),
+        //ПОЛ
+        Object o;
+        o.Init(Surface::surface(35.0f,50.0f,5,5),
                screen()->refreshRate()/100,
-               "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\f.jpg",
-               "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\1.jpg",
-               {m_programDebugShadows});
+               "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\title.jpg",
+               "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_title.jpg",
+               shaiders);
+        o.model.setTranslate(0 , -6.1f , 0);
+        o.model.setRotate(0,0,0,1.0f);
+        walls.push_back(o);
 
 
+
+        //ПОТОЛОК
+        o.Init(Surface::surface(35.0f,50.0f,5,5),
+               screen()->refreshRate()/100,
+               "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\title.jpg",
+               "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_title.jpg",
+               shaiders);
+        o.model.setTranslate(0 , 41.0f , 0);
+        o.model.setRotate(90.0f*2,0,0,1.0f);
+        walls.push_back(o);
+
+
+        //БОКОВЫЕ НИЖНИЕ
+        o.Init(Surface::surface((41.0f+6.1f)/2,50.0f,5,5),
+               screen()->refreshRate()/100,
+               "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\title.jpg",
+               "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_title.jpg",
+               shaiders);
+        o.model.setTranslate(35.0f , (41.0f+6.1f)/2-6.1f-(41.0f+6.1f) , 0);
+        o.model.setRotate(90.0f,0,0,1.0f);
+
+
+        walls.push_back(o);
+
+        o.Init(Surface::surface((41.0f+6.1f)/2,50.0f,1,2),
+               screen()->refreshRate()/100,
+               "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\title.jpg",
+               "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\maectro.png",
+               shaiders);
+        o.model.setTranslate(-35.0f , (41.0f+6.1f)/2-6.1f-(41.0f+6.1f) , 0);
+        o.model.setRotate(90*3,0,0,1.0f);
+
+
+        walls.push_back(o);
+
+        //БОКОВЫЕ ВЕРХНИЕ
+        o.Init(Surface::surface((41.0f+6.1f)/2,50.0f,5,5),
+               screen()->refreshRate()/100,
+               "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\title.jpg",
+               "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_title.jpg",
+               shaiders);
+        o.model.setTranslate(35.0f , (41.0f+6.1f)/2-6.1f+(41.0f+6.1f) , 0);
+        o.model.setRotate(90.0f,0,0,1.0f);
+
+
+        walls.push_back(o);
+
+        o.Init(Surface::surface((41.0f+6.1f)/2,50.0f,1,2),
+               screen()->refreshRate()/100,
+               "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\title.jpg",
+               "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\maectro.png",
+               shaiders);
+        o.model.setTranslate(-35.0f , (41.0f+6.1f)/2-6.1f+(41.0f+6.1f) , 0);
+        o.model.setRotate(90*3,0,0,1.0f);
+
+
+        walls.push_back(o);
+
+
+        //ДАЛЬНИЕ НИЖНИЕ
+        o.Init(Surface::surface(35.0f,(41.0f+6.1f)/2,5,5),
+               screen()->refreshRate()/100,
+               "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\title.jpg",
+               "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_title.jpg",
+               shaiders);
+        o.model.setTranslate( 0, (41.0f+6.1f)/2-6.1f-(41.0f+6.1f) , -50);
+        o.model.setRotate(90,1.0f,0,0);
+
+
+        walls.push_back(o);
+
+        o.Init(Surface::surface(35.0f,(41.0f+6.1f)/2,5,5),
+               screen()->refreshRate()/100,
+               "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\title.jpg",
+               "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_title.jpg",
+               shaiders);
+        o.model.setTranslate( 0, (41.0f+6.1f)/2-6.1f-(41.0f+6.1f) , 50);
+        o.model.setRotate(90*3,1.0f,0,0);
+
+
+        walls.push_back(o);
+
+        //ДАЛЬНИЕ ВЕРХНИЕ
+        o.Init(Surface::surface(35.0f,(41.0f+6.1f)/2,5,5),
+               screen()->refreshRate()/100,
+               "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\title.jpg",
+               "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_title.jpg",
+               shaiders);
+        o.model.setTranslate( 0, (41.0f+6.1f)/2-6.1f+(41.0f+6.1f) , -50);
+        o.model.setRotate(90,1.0f,0,0);
+
+
+        walls.push_back(o);
+
+        o.Init(Surface::surface(35.0f,(41.0f+6.1f)/2,5,5),
+               screen()->refreshRate()/100,
+               "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\title.jpg",
+               "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_title.jpg",
+               shaiders);
+        o.model.setTranslate( 0, (41.0f+6.1f)/2-6.1f+(41.0f+6.1f) , 50);
+        o.model.setRotate(90*3,1.0f,0,0);
+
+
+        walls.push_back(o);
     }
-
 
 }
 
@@ -410,8 +518,8 @@ void Scene::setLightCoefs(std::vector<int> vec)
     coefs.ka = static_cast<float>(vec[0])/100;
     coefs.kd = vec[1];
     coefs.k = vec[2];
-    coefs.p = vec[3];
-    coefs.n = vec[4];
+    coefs.p = static_cast<float>(vec[3])/10;
+    coefs.n = static_cast<float>(vec[4])/10;
     coefs.ks = vec[5];
 }
 

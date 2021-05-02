@@ -8,6 +8,7 @@
 #include <QOpenGLVertexArrayObject>
 #include <QOpenGLTexture>
 #include <QOpenGLExtraFunctions>
+#include <QOpenGLFunctions_4_0_Core>
 #include <string>
 
 #include "objectmodel.h"
@@ -32,7 +33,6 @@ public:
                 std::vector<QOpenGLShaderProgram*>m_program);
 
     virtual void render(QOpenGLShaderProgram *m_program ,QOpenGLFunctions* scene);
-    void render2(QOpenGLShaderProgram *m_program ,QOpenGLFunctions* scene);
 
     std::vector<Vertex> vertexs;
 
@@ -45,6 +45,27 @@ public:
     std::shared_ptr<QOpenGLTexture> texture, normalMap;
 
     ObjectModel model;
+
+
+
+
+    template<typename T>
+    static void render(std::vector<T>& objects ,QOpenGLShaderProgram *m_program ,QOpenGLFunctions* scene)
+    {
+        for (auto obj = objects.begin() ; obj!= objects.end(); ++obj)
+        {
+            obj->render(m_program , scene);
+        }
+    }
+
+    template<typename T1,typename T2>
+    static void render(std::map<T1,T2>& objects ,QOpenGLShaderProgram *m_program ,QOpenGLFunctions* scene)
+    {
+        for (auto it = objects.begin() ; it!= objects.end() ; ++it)
+        {
+            it->second.render(m_program,scene);
+        }
+    }
 
 };
 

@@ -3,6 +3,7 @@
 
 #include <QOpenGLShaderProgram>
 #include <QOpenGLExtraFunctions>
+#include <QOpenGLFunctions_3_0>
 #include <QColorDialog>
 #include <QOpenGLWidget>
 #include <QKeyEvent>
@@ -24,11 +25,11 @@
 #include "keyboard.h"
 #include "mouse.h"
 #include "quadMesh.h"
+#include "ball.h"
 
 class Scene : public QOpenGLWidget, protected QOpenGLFunctions
 {
 public:
-
 void initializeGL() override;
 void initProgram();
 void initShadersParam();
@@ -51,19 +52,22 @@ void keyEvent();
 void mouseMoveEvent(QMouseEvent *event) override;
 void mouseEvent();
 
+void initShadowBuffers();
+
+void createShadowMap();
+
 Scene(QWidget* parent = nullptr, Qt::WindowFlags f = Qt::WindowFlags()):QOpenGLWidget(parent,f), timer(new QTimer(this)){}
 
 ~Scene(){}
 
 private:
 
-std::vector<Object> balls;
+BallsPool ballsPool;
 
 std::vector<Object> table;
-
+std::vector<Object> lamps;
+std::vector<Object> walls;
 std::vector<LightObject> lights;
-
-Object quad;
 
 Camera camera;
 
@@ -78,14 +82,16 @@ GLint m_posAttr = 0;
 GLint m_trMatrix = 0;
 GLint m_matrixUniform = 0;
 
-unsigned int depthMapFBO;
+unsigned int depthMapFBO[4];
 const unsigned int SHADOW_WIDTH = 1920, SHADOW_HEIGHT = 1920;
-unsigned int depthMap;
+GLuint depthMap[4];
 
 int m_minFilterMode  =0 ;
 int m_magFilterMode =0 ;
 int m_useAniso =0 ;
 int m_wrapMode =0 ;
+
+QMatrix4x4 lightSpaceMatrix[4];
 
 QOpenGLFunctions *f = nullptr;
 QOpenGLShaderProgram *m_program = nullptr;
