@@ -3,8 +3,10 @@
 
 Ball::Ball(Object obj , int number , float radius): obj(obj),number(number), radius(radius)
 {
-    dx = static_cast<float>(rand()%30)/100;
-    dz = static_cast<float>(rand()%30)/100;
+    prevX = obj.model.tx;
+    prevY = obj.model.tz;
+    dx = static_cast<float>(rand()%30)/200;
+    dz = static_cast<float>(rand()%30)/200;
 };
 
 float angle(float x, float y)
@@ -27,9 +29,9 @@ float angle(float x, float y)
     return r*acos(dot_/n);
 }
 
-void Ball::collision(Ball& b1 , Ball& b2)
+bool Ball::collisionBalls(Ball& b1 , Ball& b2)
 {
-    if (b1.number == b2.number)return ;
+    if (b1.number == b2.number)return true;
 
     float x1 = b1.obj.model.tx;
     float x2 = b2.obj.model.tx;
@@ -38,19 +40,21 @@ void Ball::collision(Ball& b1 , Ball& b2)
 
     float Dx = x1 - x2;
     float Dy = y1 - y2;
-    float d = sqrt(Dx*Dx+Dy*Dy); if (d == 0) d = 0.01;
-    float s = Dx/d; // sin
-    float e = Dy/d; // cos
 
+    float d = sqrt(Dx*Dx+Dy*Dy); if (d == 0) d = 0.01;
     float r1 = b1.radius;
     float r2 = b2.radius;
+
+    if (d > r1+r2) return true;
+
+
+    float s = Dx/d; // sin
+    float e = Dy/d; // cos
 
     float dx1 = b1.dx;
     float dx2 = b2.dx;
     float dy1 = b1.dz;
     float dy2 = b2.dz;
-
-    if (d > r1+r2) return;
 
     float Vn1 = dx2*s + dy2*e;
     float Vn2 = dx1*s + dy1*e;
@@ -76,21 +80,46 @@ void Ball::collision(Ball& b1 , Ball& b2)
     b2.dx = Vn1*s-Vt1*e;
     b2.dz = Vn1*e+Vt1*s;
 
+    return false;
+
+}
+
+bool Ball::collisionWalls(Ball& b1)
+{
+    if (b1.obj.model.tx >= 14.2 - b1.radius || b1.obj.model.tx <= -14.2 + b1.radius)
+    {
+        b1.dx = -b1.dx;
+        return false;
+    }
+    if (b1.obj.model.tz >= 27.6 - b1.radius || b1.obj.model.tz <= -27.6 + b1.radius)
+    {
+        b1.dz = -b1.dz;
+        return false;
+    }
+    return true;
 }
 
 void Ball::move()
 {
     obj.model.tx +=dx;
     obj.model.tz +=dz;
+}
 
-    if (obj.model.tx > 14.2 - radius || obj.model.tx < -14.2 + radius)
-    {
-        dx = -dx;
-    }
-    if (obj.model.tz > 27.6 - radius || obj.model.tz < -27.6 + radius)
-    {
-        dz = -dz;
-    }
+void Ball::rotate()
+{
+    obj.model.addRotate(50*sqrt(dx*dx+dz*dz) , dz , 0, -dx);
+}
+
+void Ball::toPreviousState()
+{
+    obj.model.tx = prevX;
+    obj.model.tz = prevY;
+}
+
+void Ball::savePreviousState()
+{
+    prevX = obj.model.tx;
+    prevY = obj.model.tz;
 }
 
 void Ball::render(QOpenGLShaderProgram *m_program ,QOpenGLFunctions* scene)
@@ -119,15 +148,36 @@ void BallsPool::render(QOpenGLShaderProgram *m_program ,QOpenGLFunctions* scene)
 
 void BallsPool::move()
 {
-
-
     for (auto it = balls.begin() ; it!= balls.end() ; ++it)
     {
-        for (auto it2 = it; it2!= balls.end() ; ++it2)
+        bool moveAccess = true;
+        it->second.move();
+
+        for (auto it2 = balls.begin(); it2!= balls.end() ; ++it2)
         {
-            Ball::collision(it->second , it2->second);
+            //moveAccess &= Ball::collisionBalls(it->second , it2->second);
+            if (!Ball::collisionBalls(it->second , it2->second))
+            {
+                moveAccess = false;
+            }
+        }
+        if (!Ball::collisionWalls(it->second))
+        {
+            it->second.rotate();
+            moveAccess = false;
         }
 
-        it->second.move();
+        if (moveAccess)
+        {
+            it->second.rotate();
+            it->second.savePreviousState();
+
+        }
+        else
+        {
+
+            it->second.toPreviousState();
+        }
+
     }
 }

@@ -13,12 +13,21 @@ public:
 
     void move();
 
-    static void collision(Ball& b1 , Ball& b2);
+    void toPreviousState();
+    void savePreviousState();
+
+    void rotate();
+
+    static bool collisionBalls(Ball& b1 , Ball& b2);
+    static bool collisionWalls(Ball& b1);
 
     float dx = 2;
     float dz = 2;
 
     float radius = 1.0f;
+
+    float prevX = 0;
+    float prevY = 0;
 
     Object obj;
     int number;

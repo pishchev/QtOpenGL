@@ -233,7 +233,7 @@ void Scene::initObject()
     //BALLS
     {
         Sphere s(0.8,50,50);
-        if (false)
+        if (true)
         {
 
             for (int i = 0 ; i< 4 ; i++)
@@ -254,10 +254,10 @@ void Scene::initObject()
                            folder+img_,
                            "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_metal.jpg",
                            shaiders);
-                    o.model.setTranslate(-4+2*k , 6.5f , 8.0f*i-27);
+                    o.model.setTranslate(-4+2*k , 6.6f , 8.0f*i-26);
                     o.model.rotate(true);
                     //balls.push_back(Ball(o,num));
-                    ballsPool.addBall(num , Ball(o,num, 0.75f));
+                    ballsPool.addBall(num , Ball(o,num, 0.8f));
 
                 }
             }
@@ -280,13 +280,12 @@ void Scene::initObject()
             b.dz = 0;
             ballsPool.addBall(num , b);
 
-
             o.Init(s.getVertexs(),
                    screen()->refreshRate()/100,
-                   "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\2.jpg",
+                   "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\1.jpg",
                    "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_metal.jpg",
                    shaiders);
-            o.model.setTranslate(2*2 , 6.5f , 8.8f*2-27);
+            o.model.setTranslate(2*2 , 6.5f , 13.0f*2-27);
             num++;
             b = Ball(o,num, 0.75f);
             b.dx = 0;
@@ -305,21 +304,10 @@ void Scene::initObject()
             b.dz = -0.3f;
             ballsPool.addBall(num , b);
 
-            o.Init(s.getVertexs(),
-                   screen()->refreshRate()/100,
-                   "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\2.jpg",
-                   "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_metal.jpg",
-                   shaiders);
-            o.model.setTranslate(2*2 , 6.5f , 7.4f*2-27);
-            num++;
-            b = Ball(o,num, 0.75f);
-            b.dx = 0;
-            b.dz = 0;
-            ballsPool.addBall(num , b);
+
         }
 
     }
-
     //TABLE
     {
         Object o;
@@ -329,6 +317,7 @@ void Scene::initObject()
                "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_metal.jpg",
                shaiders);
         o.model.setTranslate(0 , 5.75f , 0);
+        o.model.setRotate(0,0,0,1.0f);
         table.push_back(o);
 
         o.Init(MeshLoader::loadMesh("D:\\source\\repos\\Qt\\Billiards\\Billiards\\meshes\\MeshTableOnly2.obj"),
@@ -337,6 +326,7 @@ void Scene::initObject()
                "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_wood2.jpg",
                shaiders);
         o.model.setTranslate(0 , -6 , 0);
+        o.model.setRotate(0,0,0,1.0f);
         table.push_back(o);
 
     }
@@ -371,7 +361,7 @@ void Scene::initObject()
                    "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_metal.jpg",
                    shaiders);
             o.model.setTranslate(7*i ,35 , k*13);
-
+            o.model.setRotate(0,0,0,1.0f);
             lights.push_back(o);
         }
 
@@ -387,6 +377,7 @@ void Scene::initObject()
                "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_title.jpg",
                shaiders);
         o.model.setTranslate(0 , -6.1f , 0);
+        o.model.setRotate(0,0,0,1.0f);
         walls.push_back(o);
 
 
@@ -398,8 +389,7 @@ void Scene::initObject()
                "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_title.jpg",
                shaiders);
         o.model.setTranslate(0 , 41.0f , 0);
-        o.model.setRotate(90.0f,0,0,1.0f);
-        o.model.frame =2;
+        o.model.setRotate(90.0f*2,0,0,1.0f);
         walls.push_back(o);
 
 
@@ -410,9 +400,8 @@ void Scene::initObject()
                "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_title.jpg",
                shaiders);
         o.model.setTranslate(35.0f , (41.0f+6.1f)/2-6.1f-(41.0f+6.1f) , 0);
-
         o.model.setRotate(90.0f,0,0,1.0f);
-        o.model.frame =1;
+
 
         walls.push_back(o);
 
@@ -422,9 +411,8 @@ void Scene::initObject()
                "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\maectro.png",
                shaiders);
         o.model.setTranslate(-35.0f , (41.0f+6.1f)/2-6.1f-(41.0f+6.1f) , 0);
+        o.model.setRotate(90*3,0,0,1.0f);
 
-        o.model.setRotate(90,0,0,1.0f);
-        o.model.frame = 3;
 
         walls.push_back(o);
 
@@ -435,9 +423,8 @@ void Scene::initObject()
                "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_title.jpg",
                shaiders);
         o.model.setTranslate(35.0f , (41.0f+6.1f)/2-6.1f+(41.0f+6.1f) , 0);
-
         o.model.setRotate(90.0f,0,0,1.0f);
-        o.model.frame =1;
+
 
         walls.push_back(o);
 
@@ -447,9 +434,8 @@ void Scene::initObject()
                "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\maectro.png",
                shaiders);
         o.model.setTranslate(-35.0f , (41.0f+6.1f)/2-6.1f+(41.0f+6.1f) , 0);
+        o.model.setRotate(90*3,0,0,1.0f);
 
-        o.model.setRotate(90,0,0,1.0f);
-        o.model.frame = 3;
 
         walls.push_back(o);
 
@@ -461,9 +447,8 @@ void Scene::initObject()
                "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_title.jpg",
                shaiders);
         o.model.setTranslate( 0, (41.0f+6.1f)/2-6.1f-(41.0f+6.1f) , -50);
-
         o.model.setRotate(90,1.0f,0,0);
-        o.model.frame = 1;
+
 
         walls.push_back(o);
 
@@ -473,9 +458,8 @@ void Scene::initObject()
                "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_title.jpg",
                shaiders);
         o.model.setTranslate( 0, (41.0f+6.1f)/2-6.1f-(41.0f+6.1f) , 50);
+        o.model.setRotate(90*3,1.0f,0,0);
 
-        o.model.setRotate(90,1.0f,0,0);
-        o.model.frame = 3;
 
         walls.push_back(o);
 
@@ -486,9 +470,8 @@ void Scene::initObject()
                "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_title.jpg",
                shaiders);
         o.model.setTranslate( 0, (41.0f+6.1f)/2-6.1f+(41.0f+6.1f) , -50);
-
         o.model.setRotate(90,1.0f,0,0);
-        o.model.frame = 1;
+
 
         walls.push_back(o);
 
@@ -498,9 +481,8 @@ void Scene::initObject()
                "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_title.jpg",
                shaiders);
         o.model.setTranslate( 0, (41.0f+6.1f)/2-6.1f+(41.0f+6.1f) , 50);
+        o.model.setRotate(90*3,1.0f,0,0);
 
-        o.model.setRotate(90,1.0f,0,0);
-        o.model.frame = 3;
 
         walls.push_back(o);
     }
