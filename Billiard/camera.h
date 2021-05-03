@@ -26,7 +26,7 @@ public:
 
 inline Camera::Camera()
 {
-    center = QVector3D(0,9,0);
+    center = QVector3D(0,12,0);
     eyeLaser = QVector3D(0,0,-1);
     headDir = QVector3D(0,1,0);
     rightDir = QVector3D(1,0,0);
@@ -71,15 +71,59 @@ inline void Camera::rotate(float upDown, float leftRight)
 
 }
 
+static void boxCollide(QVector3D camera , QVector3D& nadd)
+{
+    if (abs((camera + nadd).x()) >= 27.0f)
+    {
+        nadd = QVector3D(0, nadd.y() , nadd.z());
+    }
+
+    if (abs((camera + nadd).z()) >= 38.0f)
+    {
+        nadd = QVector3D(nadd.x(), nadd.y() , 0);
+    }
+
+    if ((camera + nadd).y() >= 30.0f || (camera + nadd).y() <= 0.0f)
+    {
+        nadd = QVector3D(nadd.x(), 0 ,nadd.z());
+    }
+}
+
+static void tableCollide(QVector3D camera , QVector3D& nadd)
+{
+    if ((abs((camera + nadd).x()) <= 19.0f)&&
+        (abs((camera + nadd).z()) <= 32.0f)&&
+        ((camera + nadd).y() <= 12.0f))
+    {
+        if (abs(camera.x()) > 19.0f )
+            nadd = QVector3D(0, nadd.y() , nadd.z());
+        if (abs(camera.z()) > 32.0f )
+            nadd = QVector3D(nadd.x(), nadd.y() , 0);
+        if (abs(camera.y()) > 12.0f )
+            nadd = QVector3D(nadd.x(), 0, nadd.z());
+    }
+
+}
+
+
 inline void Camera::step(float forwBack, float leftRight)
 {
-    center = center + eyeLaser*forwBack;
-    center = center + rightDir*leftRight;
+    auto nadd = eyeLaser*forwBack+ rightDir*leftRight;
+
+    boxCollide(center,nadd);
+    tableCollide(center,nadd);
+
+
+    center = center + nadd;
+
 }
 
 inline void Camera::fly(float upDown)
 {
-    center = center + QVector3D(0,upDown ,0);
+    auto nadd = QVector3D(0,upDown ,0);
+    boxCollide(center,nadd);
+    tableCollide(center,nadd);
+    center = center + nadd;
 }
 
 #endif // CAMERA_H
