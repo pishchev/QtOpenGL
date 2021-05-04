@@ -21,7 +21,8 @@ struct KeyBoard
                                 {Qt::Key_Right , false},
                                 {Qt::Key_Down , false},
                                 {Qt::Key_1 , false},
-                                {Qt::Key_0 , false}};
+                                {Qt::Key_0 , false},
+                                {Qt::Key_E , false}};
 };
 
 #endif // KEYBOARD_H

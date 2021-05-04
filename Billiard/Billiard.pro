@@ -12,6 +12,7 @@ LIBS += -lglu32
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    arrow.cpp \
     ball.cpp \
     main.cpp \
     mainwindow.cpp \
@@ -21,9 +22,11 @@ SOURCES += \
     scene.cpp \
     sourcelight.cpp \
     sphere.cpp \
-    surface.cpp
+    surface.cpp \
+    triangle.cpp
 
 HEADERS += \
+    arrow.h \
     ball.h \
     camera.h \
     keyboard.h \
@@ -36,7 +39,8 @@ HEADERS += \
     scene.h \
     sourcelight.h \
     sphere.h \
-    surface.h
+    surface.h \
+    triangle.h
 
 FORMS += \
     mainwindow.ui

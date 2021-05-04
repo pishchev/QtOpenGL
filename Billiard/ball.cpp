@@ -1,5 +1,17 @@
 #include "ball.h"
 #include <cmath>
+#include <algorithm>
+
+Ball::Ball()
+{
+
+}
+
+void Ball::hit(float adx , float ady)
+{
+    dx += adx;
+    dz += ady;
+}
 
 Ball::Ball(Object obj , int number , float radius): obj(obj),number(number), radius(radius)
 {
@@ -80,6 +92,11 @@ bool Ball::collisionBalls(Ball& b1 , Ball& b2)
     b2.dx = Vn1*s-Vt1*e;
     b2.dz = Vn1*e+Vt1*s;
 
+    b1.dx *= (1-b1.collideBallLoss);
+    b1.dz *= (1-b1.collideBallLoss);
+    b2.dx *= (1-b2.collideBallLoss);
+    b2.dz *= (1-b2.collideBallLoss);
+
     return false;
 
 }
@@ -89,11 +106,13 @@ bool Ball::collisionWalls(Ball& b1)
     if (b1.obj.model.tx >= 14.2 - b1.radius || b1.obj.model.tx <= -14.2 + b1.radius)
     {
         b1.dx = -b1.dx;
+        b1.dx *= (1-b1.collideTableLoss);
         return false;
     }
     if (b1.obj.model.tz >= 27.6 - b1.radius || b1.obj.model.tz <= -27.6 + b1.radius)
     {
         b1.dz = -b1.dz;
+        b1.dz *= (1-b1.collideTableLoss);
         return false;
     }
     return true;
@@ -120,6 +139,9 @@ void Ball::savePreviousState()
 {
     prevX = obj.model.tx;
     prevY = obj.model.tz;
+
+    dx *= (1- std::fmin(frictionLoss/abs(dx) , 1)) ;
+    dz *= (1-std::fmin(frictionLoss/abs(dz) , 1));
 }
 
 void Ball::render(QOpenGLShaderProgram *m_program ,QOpenGLFunctions* scene)

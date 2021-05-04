@@ -16,10 +16,15 @@ public:
     void toPreviousState();
     void savePreviousState();
 
+    void hit(float adx , float ady);
     void rotate();
 
     static bool collisionBalls(Ball& b1 , Ball& b2);
     static bool collisionWalls(Ball& b1);
+
+    float collideBallLoss = 0.05f;
+    float collideTableLoss = 0.08f;
+    float frictionLoss = 0.0001f;
 
     float dx = 2;
     float dz = 2;

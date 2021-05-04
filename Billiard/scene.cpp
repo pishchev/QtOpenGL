@@ -42,11 +42,32 @@ void Scene::paintGL()
         glBindTexture(GL_TEXTURE_2D, depthMap[i]);
     }
 
+    arrow.follow();
+
     Object::render(ballsPool.balls,m_program , this);
+
     Object::render(table,m_program , this);
     Object::render(lamps,m_program , this);
     Object::render(walls,m_program , this);
     Object::render(lights,m_program , this);
+
+    if(arrow.preparing)
+    {
+        arrow.prepare();
+    }
+    if(arrow.shot)
+    {
+        arrow.shot = false;
+
+        QVector2D hit = arrow.hit();
+        ballsPool.balls[8].hit(hit.x(),hit.y());
+
+        arrow.drop();
+    }
+
+    m_program->setUniformValue("ambientColor", QColor(255 * arrow.arrowColorFactor() , (1- arrow.arrowColorFactor())*255 , 0 ));
+    Object::render(arrow.arrow,m_program , this);
+
     m_program->release();
 
     ++m_frame;
@@ -129,16 +150,27 @@ void Scene::keyReleaseEvent(QKeyEvent* event)
 
 void Scene::mouseMoveEvent(QMouseEvent *event)
 {
-    int dx = QCursor::pos().x() - mouse.mouseX;
-    int dy = QCursor::pos().y() - mouse.mouseY;
+    if (event->buttons() == Qt::RightButton)
+    {
+        int dx = QCursor::pos().x() - mouse.mouseX;
+        int dy = QCursor::pos().y() - mouse.mouseY;
 
-    camera.rotate(-1*(float)dy/5,-1*(float)dx/5);
+        camera.rotate(-1*(float)dy/5,-1*(float)dx/5);
+    }
+
+    if (event->buttons() == Qt::LeftButton)
+    {
+        int dx = QCursor::pos().x() - mouse.mouseX;
+
+        //camera.rotate(-1*(float)dy/5,-1*(float)dx/5);
+        arrow.addRotate(1*(float)dx/5);
+    }
 }
 
 void Scene::mouseEvent()
 {
     mouse.mouseX = QCursor::pos().x();
-    mouse.mouseY = QCursor::pos().y();
+    mouse.mouseY = QCursor::pos().y();    
 }
 
 void Scene::keyEvent()
@@ -167,6 +199,28 @@ void Scene::keyEvent()
     if (keys.keys[Qt::Key_Control])
     {
         camera.fly(-camera_speed);
+    }
+    if (keys.keys[Qt::Key_Left])
+    {
+        arrow.addRotate(-2.3f);
+    }
+    if (keys.keys[Qt::Key_Right])
+    {
+        arrow.addRotate(2.3f);
+    }
+
+    if (keys.keys[Qt::Key_E])
+    {
+        arrow.preparing = true;
+        arrow.shot = false;
+    }
+    else
+    {
+        if (arrow.preparing)
+        {
+            arrow.shot = true;
+        }
+        arrow.preparing = false;
     }
 }
 
@@ -314,10 +368,12 @@ void Scene::initObject()
         o.Init(Surface::surface(14.2f,27.6f,15,15),
                screen()->refreshRate()/100,
                "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\f.jpg",
-               "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_metal.jpg",
+               "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_text.png",
                shaiders);
         o.model.setTranslate(0 , 5.75f , 0);
         o.model.setRotate(0,0,0,1.0f);
+        Filtering(o,2);
+
         table.push_back(o);
 
         o.Init(MeshLoader::loadMesh("D:\\source\\repos\\Qt\\Billiards\\Billiards\\meshes\\MeshTableOnly2.obj"),
@@ -330,7 +386,6 @@ void Scene::initObject()
         table.push_back(o);
 
     }
-
     //LAMPS
     {
         Object o;
@@ -347,7 +402,6 @@ void Scene::initObject()
         }
 
     }
-
     //LIGHTS
     {
         for (int i = -1 ; i <= 1; i += 2)
@@ -366,7 +420,6 @@ void Scene::initObject()
         }
 
     }
-
     //WALLS
     {
         //ПОЛ
@@ -486,7 +539,20 @@ void Scene::initObject()
 
         walls.push_back(o);
     }
+    //ARROW
+    {
+        Object o;
+        o.Init(Triangle::triangle(),
+               screen()->refreshRate()/100,
+               "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\title.jpg",
+               "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\norm_title.jpg",
+               shaiders);
 
+        o.model.setRotate(0,0,0,1.0f);
+        arrow.arrow.push_back(o);
+        arrow.followedBy = &(ballsPool.balls[8].obj);
+
+    }
 }
 
 void Scene::Filtering(const Object& o, int i)
@@ -495,21 +561,29 @@ void Scene::Filtering(const Object& o, int i)
     {
         o.texture->setMinMagFilters(QOpenGLTexture::Nearest, QOpenGLTexture::Nearest);
         o.texture->setMaximumAnisotropy(0);
+        o.normalMap->setMinMagFilters(QOpenGLTexture::Nearest, QOpenGLTexture::Nearest);
+        o.normalMap->setMaximumAnisotropy(0);
     }
     else if(i == 1)
     {
         o.texture->setMinMagFilters(QOpenGLTexture::LinearMipMapNearest, QOpenGLTexture::LinearMipMapNearest);
         o.texture->setMaximumAnisotropy(0);
+        o.normalMap->setMinMagFilters(QOpenGLTexture::LinearMipMapNearest, QOpenGLTexture::LinearMipMapNearest);
+        o.normalMap->setMaximumAnisotropy(0);
     }
     else if(i == 2)
     {
         o.texture->setMinMagFilters(QOpenGLTexture::LinearMipMapLinear, QOpenGLTexture::Linear);
         o.texture->setMaximumAnisotropy(0);
+        o.normalMap->setMinMagFilters(QOpenGLTexture::LinearMipMapNearest, QOpenGLTexture::LinearMipMapNearest);
+        o.normalMap->setMaximumAnisotropy(0);
     }
     else if(i == 3)
     {
         o.texture->setMinMagFilters(QOpenGLTexture::LinearMipMapLinear, QOpenGLTexture::Linear);
         o.texture->setMaximumAnisotropy(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT);
+        o.normalMap->setMinMagFilters(QOpenGLTexture::LinearMipMapNearest, QOpenGLTexture::LinearMipMapNearest);
+        o.normalMap->setMaximumAnisotropy(0);
     }
 }
 
