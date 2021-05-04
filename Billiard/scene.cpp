@@ -9,6 +9,7 @@ void Scene::initializeGL()
     mouse.mouseX = QCursor::pos().x();
     mouse.mouseY = QCursor::pos().y();
 
+    ballsPool.trianglePosition();
 }
 
 void Scene::paintGL()
@@ -60,7 +61,7 @@ void Scene::paintGL()
         arrow.shot = false;
 
         QVector2D hit = arrow.hit();
-        ballsPool.balls[8].hit(hit.x(),hit.y());
+        ballsPool.balls[0].hit(hit.x(),hit.y());
 
         arrow.drop();
     }
@@ -299,7 +300,6 @@ void Scene::initObject()
                     std::string folder = "D:\\source\\repos\\Qt\\Billiards\\Billiards\\maps\\";
 
                     int num  = i*4+k;
-                    if (num == 0)continue;
 
                     std::string img_ =std::to_string(num)+".jpg";
 
@@ -310,7 +310,6 @@ void Scene::initObject()
                            shaiders);
                     o.model.setTranslate(-4+2*k , 6.6f , 8.0f*i-26);
                     o.model.rotate(true);
-                    //balls.push_back(Ball(o,num));
                     ballsPool.addBall(num , Ball(o,num, 0.8f));
 
                 }
@@ -550,7 +549,7 @@ void Scene::initObject()
 
         o.model.setRotate(0,0,0,1.0f);
         arrow.arrow.push_back(o);
-        arrow.followedBy = &(ballsPool.balls[8].obj);
+        arrow.followedBy = &(ballsPool.balls[0].obj);
 
     }
 }

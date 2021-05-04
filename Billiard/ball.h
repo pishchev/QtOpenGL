@@ -45,6 +45,8 @@ public:
 
     void addBall(int number, Ball ball);
 
+    void trianglePosition();
+
     void move();
 
     void render(QOpenGLShaderProgram *m_program ,QOpenGLFunctions* scene);

@@ -17,8 +17,8 @@ Ball::Ball(Object obj , int number , float radius): obj(obj),number(number), rad
 {
     prevX = obj.model.tx;
     prevY = obj.model.tz;
-    dx = static_cast<float>(rand()%30)/200;
-    dz = static_cast<float>(rand()%30)/200;
+    dx = 0;
+    dz = 0;
 };
 
 float angle(float x, float y)
@@ -202,4 +202,21 @@ void BallsPool::move()
         }
 
     }
+}
+
+void BallsPool::trianglePosition()
+{
+    int activeBall = 1;
+    float radius = balls[0].radius+0.01f;
+    for (int i = 0 ; i < 5 ; i ++)
+    {
+        for (int k = 0 ; k <= i ; k ++)
+        {
+            balls[activeBall].obj.model.setTranslate(-i*radius+2*k*radius,
+                                                     6.6f,
+                                                     -13 - sqrt(3)*i*radius- 0.01 );
+            activeBall++;
+        }
+    }
+    balls[0].obj.model.setTranslate(0,6.6f,8);
 }
